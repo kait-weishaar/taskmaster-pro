@@ -35,7 +35,6 @@ var loadTasks = function() {
 
             // loop over object properties
             $.each(tasks, function(list, arr) {
-              console.log(list, arr);
               // then loop over sub-array
               arr.forEach(function(task) {
                 createTask(task.text, task.date, list);
@@ -46,6 +45,27 @@ var loadTasks = function() {
 var saveTasks = function() {
             localStorage.setItem("tasks", JSON.stringify(tasks));
 };
+
+
+var auditTask = function(taskEl) {
+
+  // get date from task element
+  var date = $(taskEl).find("span").text().trim();
+ 
+  // convert to moment object at 5:00pm
+  var time = moment(date, "L").set("hour", 17);
+  
+  // remove any old classes from element
+  $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+ 
+  // apply new class if task is near/over due date
+   if (moment().isAfter(time)) {
+     $(taskEl).addClass("list-group-item-danger");
+   } 
+   else if (Math.abs(moment().diff(time, "days")) <= 2) {
+     $(taskEl).addClass("list-group-item-warning");
+   }
+ };
 
 $(".list-group").on("click", "p", function()
           {
@@ -163,16 +183,20 @@ $(".card .list-group").sortable({
   tolerance: "pointer",
   helper: "clone",
   activate: function(event) {
-    console.log("activate", this);
+    $(this).addClass("dropover");
+    $(".bottom-trash").addClass("bottom-trash-drag");
   },
   deactivate: function(event) {
-    console.log("deactivate", this);
+    $(this).removeClass("dropover");
+    $(".bottom-trash").removeClass("bottom-trash-drag");
   },
   over: function(event) {
-    console.log("over", event.target);
+    $(event.target).addClass("dropover-active");
+    $(".bottom-trash").addClass("bottom-trash-active");
   },
   out: function(event) {
-    console.log("out", event.target);
+    $(event.target).removeClass("dropover-active");
+    $(".bottom-trash").removeClass("bottom-trash-active");
   },
   
   
@@ -240,7 +264,7 @@ $("#task-form-modal").on("shown.bs.modal", function() {
 });
 
 // save button in modal was clicked
-$("#task-form-modal .btn-primary").click(function() {
+$("#task-form-modal .btn-save").click(function() {
   // get form values
   var taskText = $("#modalTaskDescription").val();
   var taskDate = $("#modalDueDate").val();
@@ -278,22 +302,11 @@ $("#modalDueDate").datepicker({
 });
 
 
-var auditTask = function(taskEl) {
 
- // get date from task element
- var date = $(taskEl).find("span").text().trim();
 
- // convert to moment object at 5:00pm
- var time = moment(date, "L").set("hour", 17);
- 
- // remove any old classes from element
- $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+setInterval(function () {
+  $(".card .list-group-item").each(function(index, el) {
+    auditTask(el);
+  });
+}, (1000*60)*30);
 
- // apply new class if task is near/over due date
-  if (moment().isAfter(time)) {
-    $(taskEl).addClass("list-group-item-danger");
-  } 
-  else if (Math.abs(moment().diff(time, "days")) <= 2) {
-    $(taskEl).addClass("list-group-item-warning");
-  }
-};
